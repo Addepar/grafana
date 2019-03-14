@@ -138,6 +138,38 @@ export class LogRow extends PureComponent<Props, State> {
       'logs-row__match-highlight--preview': previewHighlights,
     });
 
+    // Create a separate div per newline in the log entry
+    // Call trim() to prune any trailing newlines to avoid empty divs
+    const ansiLines = raw.trim().split('\n');
+    const logLines = entry
+      .trim()
+      .split('\n')
+      .map((line, index) => {
+        return (
+          <div>
+            {parsed && (
+              <Highlighter
+                autoEscape
+                highlightTag={FieldHighlight(this.onClickHighlight)}
+                textToHighlight={line}
+                searchWords={parsedFieldHighlights}
+                highlightClassName="logs-row__field-highlight"
+              />
+            )}
+            {!parsed && needsHighlighter && (
+              <Highlighter
+                textToHighlight={line}
+                searchWords={highlights}
+                findChunks={findHighlightChunksInText}
+                highlightClassName={highlightClassName}
+              />
+            )}
+            {hasAnsi && !parsed && !needsHighlighter && <LogMessageAnsi value={ansiLines[index]} />}
+            {!hasAnsi && !parsed && !needsHighlighter && line}
+          </div>
+        );
+      }, this);
+
     return (
       <div className="logs-row">
         {showDuplicates && (
@@ -160,25 +192,7 @@ export class LogRow extends PureComponent<Props, State> {
           </div>
         )}
         <div className="logs-row__message" onMouseEnter={this.onMouseOverMessage} onMouseLeave={this.onMouseOutMessage}>
-          {parsed && (
-            <Highlighter
-              autoEscape
-              highlightTag={FieldHighlight(this.onClickHighlight)}
-              textToHighlight={entry}
-              searchWords={parsedFieldHighlights}
-              highlightClassName="logs-row__field-highlight"
-            />
-          )}
-          {!parsed && needsHighlighter && (
-            <Highlighter
-              textToHighlight={entry}
-              searchWords={highlights}
-              findChunks={findHighlightChunksInText}
-              highlightClassName={highlightClassName}
-            />
-          )}
-          {hasAnsi && !parsed && !needsHighlighter && <LogMessageAnsi value={raw} />}
-          {!hasAnsi && !parsed && !needsHighlighter && entry}
+          {logLines}
           {showFieldStats && (
             <div className="logs-row__stats">
               <LogLabelStats
